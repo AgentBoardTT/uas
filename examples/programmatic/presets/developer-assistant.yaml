@@ -1,0 +1,98 @@
+# Developer Assistant - Example preset configuration
+#
+# This preset demonstrates the config preset loading feature.
+# Load it using: load_preset("examples/presets/developer-assistant.yaml")
+
+id: developer-assistant
+name: Developer Assistant
+description: A helpful coding assistant with file and command execution capabilities
+version: 1.0.0
+
+# System Prompt - Using preset type with custom append
+system_prompt:
+  type: preset
+  preset: developer
+  append: |
+    You are an expert Python and JavaScript developer.
+
+    When helping with code:
+    1. Write clean, well-documented code
+    2. Follow best practices and design patterns
+    3. Consider edge cases and error handling
+    4. Suggest tests when appropriate
+
+    You have access to tools for reading/writing files and running commands.
+    Use them to help the user with their development tasks.
+
+# Tools - Development-focused tool access
+allowed_tools:
+  - Bash           # Run commands, install packages
+  - Read           # Read files and code
+  - Write          # Create new files
+  - Edit           # Modify existing files
+  - Grep           # Search code
+  - Glob           # Find files by pattern
+  - TodoWrite      # Track tasks
+
+# Permission mode - auto-allow edits for efficiency
+permission_mode: acceptEdits
+
+# Resource Limits
+resource_limits:
+  cpu_quota: 200000    # 2 CPUs
+  memory_limit: 4g     # 4GB RAM
+  storage_limit: 10g   # 10GB storage
+
+# Setting Sources - Load project settings
+setting_sources:
+  - project  # Load from project root
+
+# Environment Variables
+env:
+  NODE_ENV: development
+  PYTHONDONTWRITEBYTECODE: "1"
+
+# Sub-agents for specialized tasks
+agents:
+  code-reviewer:
+    description: Code review specialist for analyzing code quality and suggesting improvements
+    prompt: |
+      You are an expert code reviewer. Analyze code for:
+      - Code quality and readability
+      - Potential bugs and edge cases
+      - Performance issues
+      - Security vulnerabilities
+      - Best practices compliance
+
+      Provide constructive feedback with specific suggestions.
+    tools:
+      - Read
+      - Grep
+      - Glob
+    model: sonnet
+
+  test-writer:
+    description: Test writing specialist for creating comprehensive test suites
+    prompt: |
+      You are a testing expert. Help create comprehensive tests:
+      - Unit tests for individual functions
+      - Integration tests for component interactions
+      - Edge case coverage
+      - Mock and fixture setup
+
+      Use pytest for Python and Jest for JavaScript.
+    tools:
+      - Read
+      - Write
+      - Edit
+      - Bash
+    model: sonnet
+
+# Model configuration
+model: claude-sonnet-4-20250514
+max_turns: 50
+cwd: .
+
+# Metadata
+created_at: 2024-01-01T00:00:00Z
+updated_at: 2024-01-01T00:00:00Z

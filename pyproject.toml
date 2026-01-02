@@ -1,0 +1,116 @@
+[project]
+name = "universal-agent-sdk"
+version = "0.1.0"
+description = "Universal Agent SDK - Multi-provider LLM agent framework for Python"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Universal Agent SDK Contributors"},
+]
+keywords = [
+    "llm",
+    "ai",
+    "agent",
+    "claude",
+    "openai",
+    "anthropic",
+    "gemini",
+    "ollama",
+    "multi-provider",
+    "chatbot",
+    "assistant",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+
+dependencies = [
+    "anthropic>=0.20.0",
+    "beautifulsoup4>=4.14.3",
+    "httpx>=0.25.0",
+    "openai>=2.14.0",
+    "pydantic>=2.0.0",
+    "python-dotenv>=1.0.0",
+    "PyYAML>=6.0.0",
+]
+
+[project.optional-dependencies]
+openai = ["openai>=1.0.0"]
+azure = ["openai>=1.0.0", "azure-identity>=1.14.0"]
+gemini = ["google-generativeai>=0.3.0"]
+ollama = ["ollama>=0.1.0"]
+all = [
+    "universal-agent-sdk[openai,azure,gemini,ollama]",
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/universal-agent-sdk/universal-agent-sdk-python"
+Documentation = "https://github.com/universal-agent-sdk/universal-agent-sdk-python#readme"
+Repository = "https://github.com/universal-agent-sdk/universal-agent-sdk-python"
+Changelog = "https://github.com/universal-agent-sdk/universal-agent-sdk-python/blob/main/CHANGELOG.md"
+Issues = "https://github.com/universal-agent-sdk/universal-agent-sdk-python/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/universal_agent_sdk"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tests",
+    "/examples",
+    "/docs",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["universal_agent_sdk"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_return_any = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+
+[[tool.mypy.overrides]]
+module = [
+    "anthropic.*",
+    "openai.*",
+    "google.*",
+    "ollama.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-v --tb=short"

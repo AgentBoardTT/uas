@@ -1,0 +1,159 @@
+# Creative Developer - Comprehensive preset showcasing all configuration options
+#
+# This preset demonstrates all available configuration fields including:
+# - System prompts (preset type with append)
+# - Comprehensive tool access
+# - Resource limits
+# - Setting sources
+# - Claude Skills integration
+# - Environment variables
+# - MCP servers (example configuration)
+# - Multi-agent orchestration (sub-agents)
+
+id: creative-developer
+name: Creative Developer
+description: Full-featured agent with all configuration options demonstrated
+version: 1.0.0
+
+# System Prompt - Using preset type with custom append
+system_prompt:
+  type: preset
+  preset: claude_code
+  append: |
+    You are a creative software developer with expertise in:
+    - Full-stack web development (React, Next.js, FastAPI, Python)
+    - Creative coding and generative art
+    - Building beautiful, interactive artifacts
+    - MCP server development and integration
+    - Applying professional brand guidelines
+
+    Creative Development Principles:
+    1. Build beautiful, functional user experiences
+    2. Use modern design patterns and best practices
+    3. Create interactive, engaging artifacts
+    4. Follow brand guidelines when specified
+    5. Write clean, well-documented code
+
+# Tools - Comprehensive access for creative development
+allowed_tools:
+  - Bash           # Run commands, install packages
+  - Read           # Read files and code
+  - Write          # Create new files
+  - Edit           # Modify existing files
+  - Grep           # Search code
+  - Glob           # Find files by pattern
+  - Task           # Delegate to sub-agents
+  - WebFetch       # Fetch web content
+  - WebSearch      # Search the web
+  - TodoWrite      # Track tasks
+  - NotebookEdit   # Work with Jupyter notebooks
+  - Skill          # Invoke Claude Skills for specialized knowledge
+  - Memory         # Persistent memory storage
+
+# Permission mode
+permission_mode: acceptEdits
+
+# Resource Limits - Higher limits for creative development
+resource_limits:
+  cpu_quota: 300000    # 3 CPUs for compute-intensive tasks
+  memory_limit: 8g     # 8GB RAM for complex applications
+  storage_limit: 20g   # 20GB storage for projects and assets
+
+# Setting Sources - Load project and user settings
+setting_sources:
+  - project  # Load CLAUDE.md from project root
+  - local    # Load .claude/CLAUDE.md from project
+
+# Claude Skills - All downloaded skills enabled
+skills:
+  - algorithmic-art         # Create generative art using p5.js
+  - web-artifacts-builder   # Build complex HTML artifacts
+  - mcp-builder            # Guide for creating MCP servers
+  - brand-guidelines       # Apply Anthropic brand styling
+
+# Environment Variables - Custom environment configuration
+env:
+  NODE_ENV: development
+  PYTHON_ENV: development
+  DEBUG: "true"
+
+# MCP Servers - Example configurations (commented out as they need real servers)
+# mcp_servers:
+#   filesystem:
+#     type: stdio
+#     command: npx
+#     args:
+#       - -y
+#       - "@modelcontextprotocol/server-filesystem"
+#       - /workspace
+#
+#   github:
+#     type: stdio
+#     command: npx
+#     args:
+#       - -y
+#       - "@modelcontextprotocol/server-github"
+#     env:
+#       GITHUB_TOKEN: ${GITHUB_TOKEN}
+
+# Sub-agents - Multi-agent orchestration example
+agents:
+  creative-frontend:
+    description: Frontend development with focus on creative, interactive UIs. Use for building engaging user experiences with modern frameworks.
+    prompt: |
+      You are a creative frontend developer specializing in:
+      - React 18+ with TypeScript
+      - Next.js 15 for full-stack applications
+      - Tailwind CSS and modern CSS techniques
+      - Interactive animations and transitions
+      - Canvas/SVG graphics and visualizations
+      - p5.js for creative coding
+
+      Focus on:
+      - Beautiful, engaging user interfaces
+      - Smooth animations and interactions
+      - Responsive design and accessibility
+      - Performance optimization
+      - Clean, reusable component architecture
+    tools:
+      - Read
+      - Write
+      - Edit
+      - Grep
+      - Glob
+      - Bash
+      - TodoWrite
+    model: sonnet
+
+  art-generator:
+    description: Generative art and creative coding specialist. Use for creating algorithmic art, visualizations, and interactive graphics.
+    prompt: |
+      You are a creative coding specialist with expertise in:
+      - p5.js and Processing for generative art
+      - Canvas API and WebGL
+      - Algorithmic design and computational aesthetics
+      - Seeded randomness and reproducibility
+      - Color theory and composition
+      - Flow fields and particle systems
+
+      Creative Coding Principles:
+      - Use seeded randomness for reproducible results
+      - Focus on aesthetic quality and composition
+      - Create parametric systems users can explore
+      - Balance complexity with visual clarity
+      - Optimize for real-time performance
+    tools:
+      - Read
+      - Write
+      - Edit
+      - Bash
+      - TodoWrite
+    model: sonnet
+
+# Advanced Options
+max_turns: 200   # Higher limit for complex creative projects
+model: claude-sonnet-4-20250514
+
+# Metadata
+created_at: 2024-11-27T00:00:00Z
+updated_at: 2024-11-27T00:00:00Z
