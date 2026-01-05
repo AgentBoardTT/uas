@@ -90,7 +90,9 @@ Useful for reading articles, documentation, or any web content.
                         soup = BeautifulSoup(content, "html.parser")
 
                         # Remove script and style elements
-                        for element in soup(["script", "style", "nav", "footer", "header", "aside"]):
+                        for element in soup(
+                            ["script", "style", "nav", "footer", "header", "aside"]
+                        ):
                             element.decompose()
 
                         # Get text
@@ -98,7 +100,8 @@ Useful for reading articles, documentation, or any web content.
 
                         # Clean up multiple newlines
                         import re
-                        text = re.sub(r'\n{3,}', '\n\n', text)
+
+                        text = re.sub(r"\n{3,}", "\n\n", text)
 
                         # Get title
                         title = soup.title.string if soup.title else ""
@@ -107,46 +110,60 @@ Useful for reading articles, documentation, or any web content.
                         meta_desc = ""
                         meta_tag = soup.find("meta", attrs={"name": "description"})
                         if meta_tag:
-                            meta_desc = meta_tag.get("content", "")
+                            meta_content = meta_tag.get("content", "")
+                            meta_desc = str(meta_content) if meta_content else ""
 
                         # Truncate if too long
                         if len(text) > self.max_content_length:
-                            text = text[:self.max_content_length] + "\n\n...[content truncated]"
+                            text = (
+                                text[: self.max_content_length]
+                                + "\n\n...[content truncated]"
+                            )
 
-                        return json.dumps({
-                            "url": url,
-                            "title": title,
-                            "description": meta_desc,
-                            "content": text,
-                            "status_code": response.status_code,
-                        })
+                        return json.dumps(
+                            {
+                                "url": url,
+                                "title": title,
+                                "description": meta_desc,
+                                "content": text,
+                                "status_code": response.status_code,
+                            }
+                        )
 
                     except ImportError:
                         # BeautifulSoup not available, return raw HTML
                         if len(content) > self.max_content_length:
-                            content = content[:self.max_content_length] + "...[truncated]"
+                            content = (
+                                content[: self.max_content_length] + "...[truncated]"
+                            )
 
-                        return json.dumps({
+                        return json.dumps(
+                            {
+                                "url": url,
+                                "raw_html": content,
+                                "status_code": response.status_code,
+                                "note": "Install beautifulsoup4 for better text extraction: pip install beautifulsoup4",
+                            }
+                        )
+                else:
+                    if len(content) > self.max_content_length:
+                        content = content[: self.max_content_length] + "...[truncated]"
+
+                    return json.dumps(
+                        {
                             "url": url,
                             "raw_html": content,
                             "status_code": response.status_code,
-                            "note": "Install beautifulsoup4 for better text extraction: pip install beautifulsoup4",
-                        })
-                else:
-                    if len(content) > self.max_content_length:
-                        content = content[:self.max_content_length] + "...[truncated]"
-
-                    return json.dumps({
-                        "url": url,
-                        "raw_html": content,
-                        "status_code": response.status_code,
-                    })
+                        }
+                    )
 
         except Exception as e:
-            return json.dumps({
-                "error": str(e),
-                "url": url,
-            })
+            return json.dumps(
+                {
+                    "error": str(e),
+                    "url": url,
+                }
+            )
 
     def to_tool_definition(self) -> ToolDefinition:
         """Convert to a ToolDefinition for use with agents."""

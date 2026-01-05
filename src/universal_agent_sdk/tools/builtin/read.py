@@ -109,7 +109,7 @@ Usage:
     def _read_pdf(self, path: Path) -> str:
         """Read a PDF file and extract text."""
         try:
-            import pdfplumber
+            import pdfplumber  # type: ignore[import-not-found]
 
             text_parts = []
             with pdfplumber.open(path) as pdf:

@@ -22,8 +22,9 @@ Example usage:
 
 import json
 import os
+from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, cast
 
 from .types import (
     AgentDefinition,
@@ -38,17 +39,7 @@ from .types import (
 )
 
 if TYPE_CHECKING:
-    from .tools.builtin import (
-        BashTool,
-        EditTool,
-        GlobTool,
-        GrepTool,
-        NotebookEditTool,
-        ReadTool,
-        WebFetchTool,
-        WebSearchTool,
-        WriteTool,
-    )
+    from .client import UniversalAgentClient
 
 # Try to import yaml, but make it optional
 try:
@@ -85,25 +76,26 @@ def load_preset(path: str | Path) -> AgentPreset:
 
     suffix = path.suffix.lower()
 
-    try:
-        with open(path, encoding="utf-8") as f:
-            if suffix in (".yaml", ".yml"):
-                if not YAML_AVAILABLE:
-                    raise PresetLoadError(
-                        "PyYAML is required to load YAML presets. "
-                        "Install it with: pip install pyyaml"
-                    )
-                data = yaml.safe_load(f)
-            elif suffix == ".json":
-                data = json.load(f)
-            else:
+    with open(path, encoding="utf-8") as f:
+        if suffix in (".yaml", ".yml"):
+            if not YAML_AVAILABLE:
                 raise PresetLoadError(
-                    f"Unsupported file format: {suffix}. Use .yaml, .yml, or .json"
+                    "PyYAML is required to load YAML presets. "
+                    "Install it with: pip install pyyaml"
                 )
-    except (yaml.YAMLError if YAML_AVAILABLE else Exception) as e:
-        raise PresetLoadError(f"Failed to parse YAML: {e}") from e
-    except json.JSONDecodeError as e:
-        raise PresetLoadError(f"Failed to parse JSON: {e}") from e
+            try:
+                data = yaml.safe_load(f)
+            except yaml.YAMLError as e:
+                raise PresetLoadError(f"Failed to parse YAML: {e}") from e
+        elif suffix == ".json":
+            try:
+                data = json.load(f)
+            except json.JSONDecodeError as e:
+                raise PresetLoadError(f"Failed to parse JSON: {e}") from e
+        else:
+            raise PresetLoadError(
+                f"Unsupported file format: {suffix}. Use .yaml, .yml, or .json"
+            )
 
     return parse_preset_data(data, source_path=str(path))
 
@@ -142,7 +134,9 @@ def load_preset_from_string(
     return parse_preset_data(data, source_path=source_path)
 
 
-def parse_preset_data(data: dict[str, Any], source_path: str | None = None) -> AgentPreset:
+def parse_preset_data(
+    data: dict[str, Any], source_path: str | None = None
+) -> AgentPreset:
     """Parse preset data into an AgentPreset object.
 
     Args:
@@ -156,9 +150,7 @@ def parse_preset_data(data: dict[str, Any], source_path: str | None = None) -> A
         PresetLoadError: If required fields are missing or invalid
     """
     if not isinstance(data, dict):
-        raise PresetLoadError(
-            f"Preset must be a dictionary, got {type(data).__name__}"
-        )
+        raise PresetLoadError(f"Preset must be a dictionary, got {type(data).__name__}")
 
     # Required fields
     if "id" not in data:
@@ -256,9 +248,7 @@ def _parse_resource_limits(data: dict[str, Any] | None) -> ResourceLimits | None
 def _parse_mcp_servers(data: dict[str, Any]) -> dict[str, MCPServerConfig]:
     """Parse MCP server configurations."""
     if not isinstance(data, dict):
-        raise PresetLoadError(
-            f"mcp_servers must be a dict, got {type(data).__name__}"
-        )
+        raise PresetLoadError(f"mcp_servers must be a dict, got {type(data).__name__}")
 
     servers: dict[str, MCPServerConfig] = {}
     for name, config in data.items():
@@ -531,7 +521,7 @@ def get_builtin_tool(tool_name: str) -> ToolDefinition | None:
 
     # Instantiate the tool and convert to definition
     tool_instance = tool_class()
-    return tool_instance.to_tool_definition()
+    return cast(ToolDefinition, tool_instance.to_tool_definition())
 
 
 def get_builtin_tools(tool_names: list[str]) -> list[ToolDefinition]:

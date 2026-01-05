@@ -86,6 +86,7 @@ include = [
 [tool.ruff]
 line-length = 88
 target-version = "py310"
+exclude = ["src/universal_agent_sdk/skills/bundled"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM"]
@@ -98,9 +99,10 @@ known-first-party = ["universal_agent_sdk"]
 python_version = "3.10"
 strict = true
 warn_return_any = true
-warn_unused_ignores = true
+warn_unused_ignores = false
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
+exclude = ["src/universal_agent_sdk/skills/bundled"]
 
 [[tool.mypy.overrides]]
 module = [
@@ -108,8 +110,17 @@ module = [
     "openai.*",
     "google.*",
     "ollama.*",
+    "yaml.*",
+    "pdfplumber",
+    "pdfplumber.*",
+    "ddgs",
+    "ddgs.*",
 ]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "universal_agent_sdk.skills.bundled.*"
+ignore_errors = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

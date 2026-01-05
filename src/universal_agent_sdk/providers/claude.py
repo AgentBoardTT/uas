@@ -26,14 +26,14 @@ from ..types import (
 from .base import BaseProvider, ProviderRegistry, register_provider
 
 try:
-    import anthropic  # type: ignore[import-not-found]
+    import anthropic
     from anthropic import AsyncAnthropic
 
     HAS_ANTHROPIC = True
 except ImportError:
     HAS_ANTHROPIC = False
-    anthropic = None
-    AsyncAnthropic = None
+    anthropic = None  # type: ignore[assignment]
+    AsyncAnthropic = None  # type: ignore[assignment, misc]
 
 
 @register_provider("claude")
@@ -447,7 +447,10 @@ class ClaudeProvider(BaseProvider):
                             yield StreamEvent(
                                 event_type="content_block_delta",
                                 index=event.index,
-                                delta={"type": "thinking_delta", "thinking": delta.thinking},
+                                delta={
+                                    "type": "thinking_delta",
+                                    "thinking": delta.thinking,
+                                },
                             )
                         elif delta.type == "signature_delta":
                             # Capture thinking signature for multi-turn conversations
@@ -455,7 +458,10 @@ class ClaudeProvider(BaseProvider):
                             yield StreamEvent(
                                 event_type="content_block_delta",
                                 index=event.index,
-                                delta={"type": "signature_delta", "signature": current_thinking_signature},
+                                delta={
+                                    "type": "signature_delta",
+                                    "signature": current_thinking_signature,
+                                },
                             )
 
                     elif event.type == "content_block_stop":

@@ -78,18 +78,20 @@ Returns search results with titles, URLs, and snippets.
                 with DDGS() as ddgs:
                     results = list(ddgs.text(query, max_results=num_results))
 
-                return json.dumps({
-                    "query": query,
-                    "results": [
-                        {
-                            "title": r.get("title", ""),
-                            "url": r.get("href", ""),
-                            "snippet": r.get("body", ""),
-                        }
-                        for r in results
-                    ],
-                    "count": len(results),
-                })
+                return json.dumps(
+                    {
+                        "query": query,
+                        "results": [
+                            {
+                                "title": r.get("title", ""),
+                                "url": r.get("href", ""),
+                                "snippet": r.get("body", ""),
+                            }
+                            for r in results
+                        ],
+                        "count": len(results),
+                    }
+                )
             except ImportError:
                 pass
 
@@ -107,10 +109,12 @@ Returns search results with titles, URLs, and snippets.
                 )
 
                 if response.status_code != 200:
-                    return json.dumps({
-                        "error": f"Search failed: HTTP {response.status_code}",
-                        "query": query,
-                    })
+                    return json.dumps(
+                        {
+                            "error": f"Search failed: HTTP {response.status_code}",
+                            "query": query,
+                        }
+                    )
 
                 # Try to parse with BeautifulSoup
                 try:
@@ -126,37 +130,51 @@ Returns search results with titles, URLs, and snippets.
 
                         if title_elem:
                             title = title_elem.get_text(strip=True)
-                            url = title_elem.get("href", "")
-                            snippet = snippet_elem.get_text(strip=True) if snippet_elem else ""
+                            href = title_elem.get("href", "")
+                            url = str(href) if href else ""
+                            snippet = (
+                                snippet_elem.get_text(strip=True)
+                                if snippet_elem
+                                else ""
+                            )
 
                             # Clean up DuckDuckGo redirect URL
-                            if "uddg=" in url:
+                            if url and "uddg=" in url:
                                 import urllib.parse
-                                parsed = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
+
+                                parsed = urllib.parse.parse_qs(
+                                    urllib.parse.urlparse(url).query
+                                )
                                 url = parsed.get("uddg", [url])[0]
 
-                            results.append({
-                                "title": title,
-                                "url": url,
-                                "snippet": snippet,
-                            })
+                            results.append(
+                                {
+                                    "title": title,
+                                    "url": url,
+                                    "snippet": snippet,
+                                }
+                            )
 
                     if results:
-                        return json.dumps({
-                            "query": query,
-                            "results": results,
-                            "count": len(results),
-                        })
+                        return json.dumps(
+                            {
+                                "query": query,
+                                "results": results,
+                                "count": len(results),
+                            }
+                        )
 
                 except ImportError:
                     pass
 
                 # Last resort: just indicate search was performed
-                return json.dumps({
-                    "query": query,
-                    "note": "Search completed but parsing requires beautifulsoup4. Install with: pip install beautifulsoup4",
-                    "suggestion": "Use WebFetch to fetch specific URLs for detailed information.",
-                })
+                return json.dumps(
+                    {
+                        "query": query,
+                        "note": "Search completed but parsing requires beautifulsoup4. Install with: pip install beautifulsoup4",
+                        "suggestion": "Use WebFetch to fetch specific URLs for detailed information.",
+                    }
+                )
 
         except Exception as e:
             return json.dumps({"error": str(e), "query": query})

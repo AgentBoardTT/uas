@@ -25,14 +25,14 @@ from ..types import (
 from .base import BaseProvider, register_provider
 
 try:
-    import openai  # type: ignore[import-not-found]
+    import openai
     from openai import AsyncOpenAI
 
     HAS_OPENAI = True
 except ImportError:
     HAS_OPENAI = False
-    openai = None
-    AsyncOpenAI = None
+    openai = None  # type: ignore[assignment]
+    AsyncOpenAI = None  # type: ignore[assignment, misc]
 
 
 @register_provider("openai")
@@ -101,16 +101,12 @@ class OpenAIProvider(BaseProvider):
         # Models that use the newer max_completion_tokens parameter
         newer_model_prefixes = (
             "gpt-4o",  # gpt-4o, gpt-4o-mini, etc.
-            "gpt-5",   # gpt-5, gpt-5.2, etc.
-            "o1",      # o1-preview, o1-mini, o1, etc.
-            "o3",      # o3-mini, o3, etc.
+            "gpt-5",  # gpt-5, gpt-5.2, etc.
+            "o1",  # o1-preview, o1-mini, o1, etc.
+            "o3",  # o3-mini, o3, etc.
         )
 
-        for prefix in newer_model_prefixes:
-            if model_lower.startswith(prefix):
-                return True
-
-        return False
+        return any(model_lower.startswith(prefix) for prefix in newer_model_prefixes)
 
     # ==========================================================================
     # Message Formatting (SDK -> OpenAI)

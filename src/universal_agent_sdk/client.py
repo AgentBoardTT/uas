@@ -172,9 +172,7 @@ class UniversalAgentClient:
         if provider_config is None:
             provider_config = config.get_provider_config(self.options.provider)
 
-        self._provider = ProviderRegistry.get(
-            self.options.provider, provider_config
-        )
+        self._provider = ProviderRegistry.get(self.options.provider, provider_config)
 
         # Add system prompt if configured
         if self.options.system_prompt:

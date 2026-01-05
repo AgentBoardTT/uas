@@ -41,17 +41,19 @@ for time-relative queries like "recent news", "last week", "yesterday", etc.
             JSON string with current date/time information
         """
         now = datetime.now()
-        return json.dumps({
-            "date": now.strftime("%Y-%m-%d"),
-            "time": now.strftime("%H:%M:%S"),
-            "day_of_week": now.strftime("%A"),
-            "formatted": now.strftime("%A, %B %d, %Y at %I:%M %p"),
-            "iso": now.isoformat(),
-            "timestamp": now.timestamp(),
-            "year": now.year,
-            "month": now.month,
-            "day": now.day,
-        })
+        return json.dumps(
+            {
+                "date": now.strftime("%Y-%m-%d"),
+                "time": now.strftime("%H:%M:%S"),
+                "day_of_week": now.strftime("%A"),
+                "formatted": now.strftime("%A, %B %d, %Y at %I:%M %p"),
+                "iso": now.isoformat(),
+                "timestamp": now.timestamp(),
+                "year": now.year,
+                "month": now.month,
+                "day": now.day,
+            }
+        )
 
     def to_tool_definition(self) -> ToolDefinition:
         """Convert to a ToolDefinition for use with agents."""
