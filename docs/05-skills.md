@@ -363,34 +363,53 @@ options = AgentOptions(
 
 ### SKILL.md Format
 
+Skills use **YAML frontmatter** followed by markdown content:
+
 ```markdown
-# Skill Name
+---
+name: code-reviewer
+description: Reviews code for bugs, security issues, and best practices
+allowed-tools:
+  - Read
+  - Grep
+  - Glob
+version: "1.0.0"
+author: Your Name
+tags:
+  - code
+  - review
+  - quality
+---
 
-Brief description of what the skill does.
+# Code Reviewer
 
-## System Prompt
+You are an expert code reviewer. When reviewing code:
 
-The full system prompt for the skill goes here.
-Can be multiple paragraphs.
+1. Look for bugs and logic errors
+2. Check for security vulnerabilities
+3. Suggest performance improvements
+4. Ensure code follows best practices
 
-## Metadata
+Be thorough but kind in your feedback.
 
-- version: 1.0.0
-- author: Your Name
-- tags: tag1, tag2, tag3
-- allowed_tools: Tool1, Tool2
+## Guidelines
 
-## Tools
-
-List of tools this skill uses:
-- ReadTool
-- WriteTool
-- CustomTool
-
-## Examples
-
-Optional examples of how to use the skill.
+- Always explain the reasoning behind suggestions
+- Prioritize issues by severity
+- Provide code examples when helpful
 ```
+
+#### Frontmatter Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | Skill identifier (required) |
+| `description` | string | Brief description shown in skill list |
+| `allowed-tools` | list | Tools pre-approved for this skill |
+| `model` | string | Model override (e.g., `claude-sonnet-4-20250514`) |
+| `version` | string | Semantic version |
+| `author` | string | Skill author |
+| `tags` | list | Categorization tags |
 
 ## Loading Skills to Registry
 
@@ -411,7 +430,9 @@ print(f"Loaded {count} skills")
 
 ## Skill Invocation Tool
 
-The SDK provides a Skill tool that allows the agent to invoke skills:
+The SDK provides a **Skill tool** that allows the agent to dynamically invoke skills at runtime. This is a "meta-tool" that dispatches to individual skills.
+
+### Basic Usage
 
 ```python
 from universal_agent_sdk import AgentOptions
@@ -429,6 +450,304 @@ async for msg in query(
     options,
 ):
     print(msg)
+```
+
+### How the Skill Tool Works
+
+The Skill tool follows a **meta-tool pattern** - it's a single tool that can dispatch to many different skills:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      Agent Runtime                          │
+├─────────────────────────────────────────────────────────────┤
+│  Tools: [Read, Write, Bash, Skill]                          │
+│                              │                              │
+│                              ▼                              │
+│                    ┌─────────────────┐                      │
+│                    │   Skill Tool    │ ◄── Meta-tool        │
+│                    │  (dispatcher)   │                      │
+│                    └────────┬────────┘                      │
+│                             │                               │
+│         ┌───────────────────┼───────────────────┐          │
+│         ▼                   ▼                   ▼          │
+│    ┌─────────┐        ┌─────────┐        ┌─────────┐       │
+│    │   pdf   │        │  docx   │        │  xlsx   │       │
+│    └─────────┘        └─────────┘        └─────────┘       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 1. Dynamic Description
+
+The Skill tool's description is **dynamically generated** to include all available skills:
+
+```python
+from universal_agent_sdk.skills import SkillTool
+
+tool = SkillTool(include_bundled=True)
+print(tool.description)
+# Contains:
+# <available_skills>
+# "pdf": "Comprehensive PDF manipulation toolkit..."
+# "docx": "Word document processing..."
+# ...
+# </available_skills>
+```
+
+#### 2. Skill Selection
+
+When the agent decides to use a skill, it calls the Skill tool with:
+
+```python
+# The agent makes a tool call like:
+{
+    "name": "Skill",
+    "input": {
+        "skill": "pdf",           # Which skill to invoke
+        "args": "Extract text"    # Optional arguments
+    }
+}
+```
+
+#### 3. Dual-Message Injection
+
+When a skill is invoked, it injects **two messages** into the conversation:
+
+```python
+from universal_agent_sdk.skills import SkillMessage
+
+# Message 1: VISIBLE to user (shown in UI)
+SkillMessage(
+    role="user",
+    content='<command-message>The "pdf" skill is loading</command-message>\n'
+            '<command-name>pdf</command-name>',
+    is_meta=False  # Visible
+)
+
+# Message 2: HIDDEN from UI (sent to API only)
+SkillMessage(
+    role="user",
+    content="[Full skill system prompt with instructions...]",
+    is_meta=True   # Hidden
+)
+```
+
+The `is_meta` flag controls visibility:
+- `is_meta=False`: Message appears in the UI
+- `is_meta=True`: Message is sent to the API but hidden from the user
+
+#### 4. Context Modification
+
+Skills can modify the agent's context for subsequent turns:
+
+```python
+from universal_agent_sdk.skills import SkillInvocationResult
+
+result = SkillInvocationResult(
+    skill_name="pdf",
+    skill_prompt="...",
+    messages=[...],
+
+    # Context modifications:
+    allowed_tools=["Read", "Write", "Bash"],  # Pre-approve these tools
+    model_override="claude-sonnet-4-20250514",       # Switch model if needed
+    base_dir="/path/to/skill/directory",      # For {baseDir} substitution
+)
+```
+
+| Field | Purpose |
+|-------|---------|
+| `allowed_tools` | Tools pre-approved for this skill (no permission prompts) |
+| `model_override` | Use a different model for this skill's execution |
+| `base_dir` | Path for `{baseDir}` variable substitution |
+
+### Using SkillTool Programmatically
+
+```python
+from universal_agent_sdk.skills import SkillTool, create_skill_tool
+
+# Create with bundled skills
+tool = SkillTool(include_bundled=True)
+
+# Or use the convenience function
+tool = create_skill_tool(include_bundled=True)
+
+# List available skills
+print(tool.list_skills())  # ['pdf', 'docx', 'xlsx', ...]
+
+# Get skill info
+skill = tool.get_skill("pdf")
+print(skill.description)
+
+# Invoke a skill (returns SkillInvocationResult)
+import asyncio
+result = asyncio.run(tool(skill="pdf", args="Extract text from report.pdf"))
+
+print(result.skill_name)      # "pdf"
+print(result.skill_prompt)    # Full skill prompt
+print(result.allowed_tools)   # ["Read", "Write", "Bash"]
+print(result.base_dir)        # "/path/to/skills/bundled/pdf"
+```
+
+### Adding Custom Skills to SkillTool
+
+```python
+from universal_agent_sdk.skills import SkillTool, Skill
+
+# Create empty tool
+tool = SkillTool(include_bundled=False, include_registry=False)
+
+# Add custom skill
+my_skill = Skill(
+    name="data-analyzer",
+    description="Analyzes data files and generates reports",
+    system_prompt="You are a data analysis expert...",
+)
+tool.add_skill(my_skill)
+
+# Remove skill
+tool.remove_skill("data-analyzer")
+```
+
+## Skills with Scripts
+
+Skills can include helper scripts that are executed by the agent. The `{baseDir}` variable provides the path to the skill's directory.
+
+### Directory Structure
+
+```
+.claude/skills/
+└── pdf-processor/
+    ├── SKILL.md
+    ├── scripts/
+    │   ├── extract_text.py
+    │   ├── merge_pdfs.py
+    │   └── convert_to_images.py
+    └── templates/
+        └── report_template.md
+```
+
+### Using {baseDir} in Skill Prompts
+
+In your SKILL.md, reference scripts using `{baseDir}`:
+
+```markdown
+---
+name: pdf-processor
+description: Advanced PDF processing with Python scripts
+allowed-tools:
+  - Read
+  - Write
+  - Bash
+---
+
+# PDF Processor
+
+You can process PDFs using the following scripts:
+
+## Extract Text
+```bash
+python {baseDir}/scripts/extract_text.py input.pdf output.txt
+```
+
+## Merge PDFs
+```bash
+python {baseDir}/scripts/merge_pdfs.py file1.pdf file2.pdf merged.pdf
+```
+
+## Convert to Images
+```bash
+python {baseDir}/scripts/convert_to_images.py input.pdf output_dir/
+```
+```
+
+### How {baseDir} Works
+
+When the skill is invoked, `{baseDir}` is replaced with the actual path:
+
+```python
+import asyncio
+from universal_agent_sdk.skills import SkillTool
+
+tool = SkillTool(include_bundled=True)
+result = asyncio.run(tool(skill="pdf"))
+
+print(result.base_dir)
+# Output: /home/user/.claude/skills/pdf-processor
+
+# The skill_prompt will have {baseDir} replaced:
+# "python /home/user/.claude/skills/pdf-processor/scripts/extract_text.py"
+```
+
+### Script Requirements
+
+Scripts in skill directories should:
+
+1. **Be self-contained**: Include all dependencies or use standard library
+2. **Handle errors gracefully**: Return meaningful error messages
+3. **Accept command-line arguments**: For flexibility
+4. **Output to stdout**: For easy capture by the agent
+
+Example script (`scripts/extract_text.py`):
+
+```python
+#!/usr/bin/env python3
+"""Extract text from a PDF file."""
+import sys
+
+def extract_text(pdf_path: str) -> str:
+    try:
+        import pypdf
+        reader = pypdf.PdfReader(pdf_path)
+        text = []
+        for page in reader.pages:
+            text.append(page.extract_text())
+        return "\n".join(text)
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: extract_text.py <pdf_file>", file=sys.stderr)
+        sys.exit(1)
+    print(extract_text(sys.argv[1]))
+```
+
+## Skill Invocation Flow
+
+Here's the complete flow when an agent invokes a skill:
+
+```
+1. DISCOVERY
+   ├── Load bundled skills from SDK
+   ├── Load user skills from ~/.claude/skills/
+   └── Load project skills from .claude/skills/
+
+2. SELECTION
+   ├── Agent sees Skill tool in available tools
+   ├── Description contains <available_skills> list
+   └── Agent calls Skill(skill="pdf", args="...")
+
+3. VALIDATION
+   ├── Check skill exists
+   └── Parse any arguments
+
+4. MESSAGE INJECTION
+   ├── Visible message: <command-message>The "pdf" skill is loading</command-message>
+   └── Hidden message: [Full skill system prompt] (is_meta=True)
+
+5. CONTEXT MODIFICATION
+   ├── Pre-approve tools from allowed_tools
+   ├── Apply model_override if specified
+   └── Set base_dir for {baseDir} substitution
+
+6. EXECUTION
+   ├── Agent receives skill prompt
+   ├── Agent uses pre-approved tools
+   └── Scripts run via Bash with {baseDir} paths
+
+7. COMPLETION
+   └── Skill execution ends when agent completes task
 ```
 
 ## Best Practices
