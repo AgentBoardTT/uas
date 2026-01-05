@@ -90,6 +90,28 @@ class OpenAIProvider(BaseProvider):
     def get_default_model(self) -> str:
         return "gpt-4o"
 
+    def _uses_max_completion_tokens(self, model: str) -> bool:
+        """Check if the model uses max_completion_tokens instead of max_tokens.
+
+        Newer OpenAI models (gpt-4o, o1 series, gpt-5+) require max_completion_tokens.
+        Older models (gpt-3.5-turbo, gpt-4) use max_tokens.
+        """
+        model_lower = model.lower()
+
+        # Models that use the newer max_completion_tokens parameter
+        newer_model_prefixes = (
+            "gpt-4o",  # gpt-4o, gpt-4o-mini, etc.
+            "gpt-5",   # gpt-5, gpt-5.2, etc.
+            "o1",      # o1-preview, o1-mini, o1, etc.
+            "o3",      # o3-mini, o3, etc.
+        )
+
+        for prefix in newer_model_prefixes:
+            if model_lower.startswith(prefix):
+                return True
+
+        return False
+
     # ==========================================================================
     # Message Formatting (SDK -> OpenAI)
     # ==========================================================================
@@ -268,7 +290,13 @@ class OpenAIProvider(BaseProvider):
         }
 
         if options.max_tokens:
-            kwargs["max_tokens"] = options.max_tokens
+            # Newer models (gpt-4o, o1, gpt-5+) use max_completion_tokens
+            # Older models (gpt-3.5-turbo, gpt-4) use max_tokens
+            model = options.model or self.get_default_model()
+            if self._uses_max_completion_tokens(model):
+                kwargs["max_completion_tokens"] = options.max_tokens
+            else:
+                kwargs["max_tokens"] = options.max_tokens
 
         if options.temperature is not None:
             kwargs["temperature"] = options.temperature
@@ -323,7 +351,13 @@ class OpenAIProvider(BaseProvider):
         }
 
         if options.max_tokens:
-            kwargs["max_tokens"] = options.max_tokens
+            # Newer models (gpt-4o, o1, gpt-5+) use max_completion_tokens
+            # Older models (gpt-3.5-turbo, gpt-4) use max_tokens
+            model = options.model or self.get_default_model()
+            if self._uses_max_completion_tokens(model):
+                kwargs["max_completion_tokens"] = options.max_tokens
+            else:
+                kwargs["max_tokens"] = options.max_tokens
 
         if options.temperature is not None:
             kwargs["temperature"] = options.temperature

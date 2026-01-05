@@ -1,0 +1,52 @@
+# Dockerfile for Universal Agent SDK Agent Container
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user for security
+RUN useradd -m -s /bin/bash agentuser
+
+# Copy the SDK source
+COPY --chown=agentuser:agentuser src/universal_agent_sdk /app/universal_agent_sdk
+
+# Copy container code
+COPY --chown=agentuser:agentuser examples/docker/container /app/container
+
+# Install Python dependencies
+RUN pip install --no-cache-dir \
+    fastapi>=0.109.0 \
+    uvicorn[standard]>=0.27.0 \
+    pydantic>=2.0.0 \
+    httpx>=0.26.0 \
+    pyyaml>=6.0.0 \
+    anthropic>=0.40.0 \
+    openai>=1.0.0 \
+    ddgs>=9.0.0 \
+    beautifulsoup4>=4.12.0
+
+# Create workspace directory
+RUN mkdir -p /workspace && chown agentuser:agentuser /workspace
+
+# Set environment
+ENV PYTHONPATH=/app
+ENV WORKSPACE_DIR=/workspace
+
+# Switch to non-root user
+USER agentuser
+WORKDIR /workspace
+
+# Expose port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=10s --timeout=5s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:3000/health || exit 1
+
+# Run the agent server
+CMD ["python", "-m", "uvicorn", "container.agent_server:app", "--host", "0.0.0.0", "--port", "3000"]

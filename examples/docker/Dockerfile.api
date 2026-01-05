@@ -1,0 +1,54 @@
+# Dockerfile for Universal Agent SDK API Server
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies including Docker CLI
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    ca-certificates \
+    gnupg \
+    && install -m 0755 -d /etc/apt/keyrings \
+    && curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc \
+    && chmod a+r /etc/apt/keyrings/docker.asc \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable" > /etc/apt/sources.list.d/docker.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends docker-ce-cli \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the SDK source
+COPY src/universal_agent_sdk /app/universal_agent_sdk
+
+# Copy API code
+COPY examples/docker/api /app/api
+
+# Install Python dependencies
+RUN pip install --no-cache-dir \
+    fastapi>=0.109.0 \
+    uvicorn[standard]>=0.27.0 \
+    pydantic>=2.0.0 \
+    pydantic-settings>=2.0.0 \
+    httpx>=0.26.0 \
+    pyyaml>=6.0.0 \
+    python-multipart>=0.0.6
+
+# Create configs directory
+RUN mkdir -p /app/configs/presets
+
+# Copy presets from repo root
+COPY presets /app/configs/presets
+
+# Environment
+ENV PYTHONPATH=/app
+ENV UAS_CONFIGS_DIR=/app/configs
+ENV UAS_PRESETS_DIR=/app/configs/presets
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Run the server
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]

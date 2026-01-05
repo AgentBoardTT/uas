@@ -187,6 +187,9 @@ def parse_preset_data(data: dict[str, Any], source_path: str | None = None) -> A
     # Expand environment variables in env dict
     env = _expand_env_vars(data.get("env", {}))
 
+    # Parse provider_config (with env var expansion for values like base_url)
+    provider_config = _expand_env_vars(data.get("provider_config", {}))
+
     return AgentPreset(
         id=data["id"],
         name=data["name"],
@@ -203,6 +206,7 @@ def parse_preset_data(data: dict[str, Any], source_path: str | None = None) -> A
         agents=agents,
         model=data.get("model"),
         provider=data.get("provider", "claude"),
+        provider_config=provider_config,
         max_turns=data.get("max_turns"),
         cwd=data.get("cwd"),
         created_at=data.get("created_at"),

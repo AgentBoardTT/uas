@@ -196,8 +196,9 @@ async def run_conversation(preset: AgentPreset) -> None:
 
             async for msg in client.receive():
                 if isinstance(msg, StreamEvent):
-                    # Print streaming text as it arrives
-                    if msg.delta and msg.delta.get("type") == "text":
+                    # Print streaming text as it arrives (handle both "text" and "text_delta" types)
+                    delta_type = msg.delta.get("type") if msg.delta else None
+                    if delta_type in ("text", "text_delta"):
                         print(msg.delta.get("text", ""), end="", flush=True)
                 elif isinstance(msg, AssistantMessage):
                     # If not streaming, print the full response

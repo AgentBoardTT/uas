@@ -405,7 +405,7 @@ async def virtual_assistant():
             async for msg in client.receive():
                 if isinstance(msg, StreamEvent):
                     # Print streaming text
-                    if msg.delta and msg.delta.get("type") == "text":
+                    if msg.delta and msg.delta.get("type") == "text_delta":
                         print(msg.delta.get("text", ""), end="", flush=True)
                     # Track tool calls for display
                     elif msg.delta and msg.delta.get("type") == "tool_use":

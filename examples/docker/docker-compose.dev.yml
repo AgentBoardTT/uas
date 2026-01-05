@@ -1,0 +1,50 @@
+# Development compose file - uses subprocess provider instead of Docker
+# Use this when you want to run without Docker-in-Docker
+
+services:
+  # API Server (hot reload enabled)
+  api:
+    build:
+      context: ../..
+      dockerfile: examples/docker/Dockerfile.api
+    ports:
+      - "8000:8000"
+    env_file:
+      - ../../.env
+    environment:
+      - UAS_DEBUG=true
+      - UAS_CONTAINER_PROVIDER=subprocess  # Use subprocess instead of Docker
+      - UAS_CONFIGS_DIR=/app/configs/presets
+      - UAS_PRESETS_DIR=/app/configs/presets
+    volumes:
+      - ./api:/app/api:ro
+      - ./container:/app/container:ro
+      - ../../presets:/app/configs/presets:ro
+      - ../../src/universal_agent_sdk:/app/universal_agent_sdk:ro
+    networks:
+      - uas-network
+    command: ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+  # Web UI (development mode)
+  ui:
+    image: node:20-slim
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    volumes:
+      - ./ui:/app
+      - ui_node_modules:/app/node_modules
+    networks:
+      - uas-network
+    command: sh -c "npm install && npm run dev"
+    depends_on:
+      - api
+
+networks:
+  uas-network:
+    driver: bridge
+
+volumes:
+  ui_node_modules:

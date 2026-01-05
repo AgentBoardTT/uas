@@ -71,9 +71,9 @@ Returns search results with titles, URLs, and snippets.
         num_results = min(num_results or self.default_num_results, 10)
 
         try:
-            # Try using duckduckgo-search if available (best option)
+            # Try using ddgs if available (best option)
             try:
-                from duckduckgo_search import DDGS
+                from ddgs import DDGS
 
                 with DDGS() as ddgs:
                     results = list(ddgs.text(query, max_results=num_results))

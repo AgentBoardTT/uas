@@ -62,7 +62,7 @@ async def streaming_output():
         async for msg in client.receive():
             if isinstance(msg, StreamEvent):
                 # Print streaming text as it arrives
-                if msg.delta and msg.delta.get("type") == "text":
+                if msg.delta and msg.delta.get("type") == "text_delta":
                     print(msg.delta.get("text", ""), end="", flush=True)
             elif isinstance(msg, ResultMessage):
                 print("\n")

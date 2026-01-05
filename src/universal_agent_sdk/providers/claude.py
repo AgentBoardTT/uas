@@ -190,12 +190,14 @@ class ClaudeProvider(BaseProvider):
                     }
                 )
             elif isinstance(block, ThinkingBlock):
-                result.append(
-                    {
-                        "type": "thinking",
-                        "thinking": block.thinking,
-                    }
-                )
+                thinking_block: dict[str, Any] = {
+                    "type": "thinking",
+                    "thinking": block.thinking,
+                }
+                # Include signature if present (required for multi-turn conversations)
+                if block.signature:
+                    thinking_block["signature"] = block.signature
+                result.append(thinking_block)
         return result
 
     def format_tools(self, tools: list[ToolDefinition]) -> list[dict[str, Any]]:
@@ -383,6 +385,7 @@ class ClaudeProvider(BaseProvider):
             current_text = ""
             current_tool_use: dict[str, Any] | None = None
             current_thinking = ""
+            current_thinking_signature = ""
             model = ""
             usage: Usage | None = None
             stop_reason: str | None = None
@@ -407,10 +410,16 @@ class ClaudeProvider(BaseProvider):
                         elif block.type == "thinking":
                             current_thinking = ""
 
+                        # Include tool name and id for tool_use blocks
+                        delta_info = {"type": block.type}
+                        if block.type == "tool_use":
+                            delta_info["id"] = block.id
+                            delta_info["name"] = block.name
+
                         yield StreamEvent(
                             event_type="content_block_start",
                             index=event.index,
-                            delta={"type": block.type},
+                            delta=delta_info,
                         )
 
                     elif event.type == "content_block_delta":
@@ -420,7 +429,7 @@ class ClaudeProvider(BaseProvider):
                             yield StreamEvent(
                                 event_type="content_block_delta",
                                 index=event.index,
-                                delta={"type": "text", "text": delta.text},
+                                delta={"type": "text_delta", "text": delta.text},
                             )
                         elif delta.type == "input_json_delta":
                             if current_tool_use:
@@ -429,7 +438,7 @@ class ClaudeProvider(BaseProvider):
                                 event_type="content_block_delta",
                                 index=event.index,
                                 delta={
-                                    "type": "input_json",
+                                    "type": "input_json_delta",
                                     "partial_json": delta.partial_json,
                                 },
                             )
@@ -438,7 +447,15 @@ class ClaudeProvider(BaseProvider):
                             yield StreamEvent(
                                 event_type="content_block_delta",
                                 index=event.index,
-                                delta={"type": "thinking", "thinking": delta.thinking},
+                                delta={"type": "thinking_delta", "thinking": delta.thinking},
+                            )
+                        elif delta.type == "signature_delta":
+                            # Capture thinking signature for multi-turn conversations
+                            current_thinking_signature = getattr(delta, "signature", "")
+                            yield StreamEvent(
+                                event_type="content_block_delta",
+                                index=event.index,
+                                delta={"type": "signature_delta", "signature": current_thinking_signature},
                             )
 
                     elif event.type == "content_block_stop":
@@ -463,9 +480,13 @@ class ClaudeProvider(BaseProvider):
                             current_tool_use = None
                         elif current_thinking:
                             content_blocks.append(
-                                ThinkingBlock(thinking=current_thinking)
+                                ThinkingBlock(
+                                    thinking=current_thinking,
+                                    signature=current_thinking_signature or None,
+                                )
                             )
                             current_thinking = ""
+                            current_thinking_signature = ""
 
                         yield StreamEvent(
                             event_type="content_block_stop",

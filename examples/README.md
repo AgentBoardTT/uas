@@ -15,8 +15,14 @@ examples/
 │   ├── agents/            # Agent and sub-agent examples
 │   ├── providers/         # Multi-provider examples
 │   ├── advanced/          # Advanced feature examples
-│   ├── presets/           # YAML/JSON preset configurations
+│   │                      # (presets moved to repo root /presets)
 │   └── showcase/          # Full-featured demo applications
+│
+├── docker/                # Docker web application (AVAILABLE)
+│   ├── api/               # FastAPI backend
+│   ├── container/         # Agent container server
+│   ├── ui/                # Next.js frontend
+│   └── configs/           # Agent presets
 │
 ├── cli-tool/              # Claude Code-like terminal application
 ├── vscode-extension/      # GitHub Copilot-like VS Code extension
@@ -91,7 +97,7 @@ uv run python examples/programmatic/showcase/ultimate_assistant.py
 - `stderr_callback.py` - Stderr callbacks
 - `system_prompts.py` - System prompt configuration
 
-### Presets
+### Presets (at repo root `/presets`)
 YAML configuration files for pre-configured agents:
 - `virtual-assistant.yaml` - General-purpose assistant (OpenAI)
 - `code-assistant.yaml` - Code development assistant
@@ -107,16 +113,34 @@ Full-featured demo applications:
 - `coding_agent.py` - Specialized coding agent
 - `preset_loader.py` - Interactive preset-based chat
 
-## Application Examples (Coming Soon)
+## Application Examples
 
-### CLI Tool
+### Docker Web Application (Available)
+A full-featured web application with multi-session support. See `docker/README.md`.
+
+```bash
+# Start with Docker Compose
+cd examples/docker
+docker-compose up -d
+
+# Access at http://localhost:3000
+```
+
+Features:
+- Multiple preset configurations
+- Session management (create, resume, stop)
+- Real-time streaming chat
+- Docker-isolated agent containers
+- Modern Next.js 15 + React 19 UI
+
+### CLI Tool (Coming Soon)
 A Claude Code-like terminal application. See `cli-tool/README.md`.
 
-### VS Code Extension
+### VS Code Extension (Coming Soon)
 A GitHub Copilot-like VS Code extension. See `vscode-extension/README.md`.
 
-### Desktop IDE
+### Desktop IDE (Coming Soon)
 A Cursor-like desktop IDE application. See `desktop-ide/README.md`.
 
-### Web Backend
+### Web Backend (Coming Soon)
 A Replit/Lovable-like web backend. See `web-backend/README.md`.

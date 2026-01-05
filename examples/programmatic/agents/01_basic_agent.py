@@ -143,7 +143,7 @@ async def agent_with_streaming():
 
     async for msg in agent.stream("Write a haiku about programming"):
         if isinstance(msg, StreamEvent):
-            if msg.delta and msg.delta.get("type") == "text":
+            if msg.delta and msg.delta.get("type") == "text_delta":
                 print(msg.delta.get("text", ""), end="", flush=True)
         elif isinstance(msg, AssistantMessage):
             pass  # Final message

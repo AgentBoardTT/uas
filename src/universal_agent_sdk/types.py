@@ -749,6 +749,7 @@ class AgentPreset:
     # Model configuration
     model: str | None = None
     provider: str = "claude"
+    provider_config: dict[str, Any] = field(default_factory=dict)
     max_turns: int | None = None
 
     # Working directory
@@ -790,6 +791,7 @@ class AgentPreset:
 
         return AgentOptions(
             provider=self.provider,
+            provider_config=self.provider_config if self.provider_config else None,
             model=self.model,
             system_prompt=resolved_system_prompt,
             allowed_tools=self.allowed_tools,
